@@ -1,13 +1,15 @@
 <?php
 
-interface Suin_FTPClient_ObserverInterface
+namespace Suin\FTPClient;
+
+interface ObserverInterface
 {
 	/**
 	 * @abstract
 	 * @param string $request
 	 * @return void
 	 */
-	public function updateWithRequest($request);
+	public function updateWithRequest($request): void;
 
 	/**
 	 * @abstract
@@ -15,5 +17,5 @@ interface Suin_FTPClient_ObserverInterface
 	 * @param int $code
 	 * @return void
 	 */
-	public function updateWithResponse($message, $code);
+	public function updateWithResponse($message, $code): void;
 }

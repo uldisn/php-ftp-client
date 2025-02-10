@@ -1,14 +1,19 @@
 <?php
 
-class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
-                                          Suin_FTPClient_ObservableInterface
+namespace Suin\FTPClient;
+
+use InvalidArgumentException;
+use RuntimeException;
+
+class FTPClient implements FTPClientInterface,
+                                          ObservableInterface
 {
 	/** @var resource */
 	protected $connection = null;
 	protected $timeout = 90;
 	protected $transferMode = null;
 
-	/** @var Suin_FTPClient_ObserverInterface */
+	/** @var ObserverInterface */
 	protected $observer = null;
 
 	protected $system = null;
@@ -33,8 +38,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 
 		$this->transferMode = $transferMode;
 
-		if ( in_array($this->transferMode, array(self::TRANSFER_MODE_PASSIVE)) === false )
-		{
+		if ($this->transferMode != self::TRANSFER_MODE_PASSIVE) {
 			// TODO >> support active mode.
 			throw new InvalidArgumentException('Transfer mode is invalid.');
 		}
@@ -56,24 +60,18 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @param string $password
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function login($username, $password)
-	{
+	public function login($username, $password): bool
+    {
 		$response = $this->_request(sprintf('USER %s', $username));
 
-		if ( $response['code'] !== 331 )
-		{
+		if ( $response['code'] !== 331 ) {
 			return false;
 		}
 
 		$response = $this->_request(sprintf('PASS %s', $password));
 
-		if ( $response['code'] !== 230 )
-		{
-			return false;
-		}
-
-		return true;
-	}
+        return $response['code'] === 230;
+    }
 
 	/**
 	 * Return the system name.
@@ -81,8 +79,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 */
 	public function getSystem()
 	{
-		if ( $this->system === null )
-		{
+		if ( $this->system === null ) {
 			$this->system = $this->_getSystem();
 		}
 
@@ -107,7 +104,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * Close the connection.
 	 * @return void
 	 */
-	public function disconnect()
+	public function disconnect(): void
 	{
 		$this->_request('QUIT');
 		$this->connection = null;
@@ -128,8 +125,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 
 		$from = strpos($response['message'], '"') + 1;
 		$to   = strrpos($response['message'], '"') - $from;
-		$currentDirectory = substr($response['message'], $from, $to);
-		return $currentDirectory;
+        return substr($response['message'], $from, $to);
 	}
 
 	/**
@@ -137,8 +133,8 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @param string $directory
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function changeDirectory($directory)
-	{
+	public function changeDirectory($directory): bool
+    {
 		$response = $this->_request(sprintf('CWD %s', $directory));
 		return ( $response['code'] === 250 );
 	}
@@ -148,8 +144,8 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @param string $directory
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function removeDirectory($directory)
-	{
+	public function removeDirectory($directory): bool
+    {
 		$response = $this->_request(sprintf('RMD %s', $directory));
 		return ( $response['code'] === 250 );
 	}
@@ -159,8 +155,8 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @param string $directory
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function createDirectory($directory)
-	{
+	public function createDirectory($directory): bool
+    {
 		$response = $this->_request(sprintf('MKD %s', $directory));
 		return ( $response['code'] === 257 );
 	}
@@ -171,8 +167,8 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @param string $newName
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function rename($oldName, $newName)
-	{
+	public function rename($oldName, $newName): bool
+    {
 		$response = $this->_request(sprintf('RNFR %s', $oldName));
 
 		if ( $response['code'] !== 350 )
@@ -182,21 +178,16 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 
 		$response = $this->_request(sprintf('RNTO %s', $newName));
 
-		if ( $response['code'] !== 250 )
-		{
-			return false;
-		}
-
-		return true;
-	}
+        return $response['code'] === 250;
+    }
 
 	/**
 	 * Delete a file on the FTP server.
 	 * @param string $filename
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function removeFile($filename)
-	{
+	public function removeFile($filename): bool
+    {
 		$response = $this->_request(sprintf('DELE %s', $filename));
 		return ( $response['code'] === 250 );
 	}
@@ -208,9 +199,9 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @return bool If success return TRUE, fail return FALSE.
 	 * @throws InvalidArgumentException
 	 */
-	public function setPermission($filename, $mode)
-	{
-		if ( is_integer($mode) === false or $mode < 0 or 0777 < $mode )
+	public function setPermission($filename, $mode): bool
+    {
+		if ( is_int($mode) === false || $mode < 0 || 0777 < $mode )
 		{
 			throw new InvalidArgumentException(sprintf('Invalid permission "%o" was given.', $mode));
 		}
@@ -235,7 +226,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 
 		$response = $this->_request(sprintf('NLST %s', $directory));
 
-		if ( $response['code'] !== 150 and $response['code'] !== 125 )
+		if ( $response['code'] !== 150 && $response['code'] !== 125 )
 		{
 			return false;
 		}
@@ -248,9 +239,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 		}
 
 		$list = trim($list);
-		$list = preg_split("/[\n\r]+/", $list);
-
-		return $list;
+        return preg_split("/[\n\r]+/", $list);
 	}
 	
 
@@ -271,7 +260,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 
 		$response = $this->_request(sprintf('LIST -a %s', $directory));
 
-		if ( $response['code'] !== 150 and $response['code'] !== 125 )
+		if ( $response['code'] !== 150 && $response['code'] !== 125 )
 		{
 			return false;
 		}
@@ -284,9 +273,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 		}
 
 		$list = trim($list);
-		$list = preg_split("/[\n\r]+/", $list);
-
-		return $list;
+        return preg_split("/[\n\r]+/", $list);
 	}
 
 	/**
@@ -315,7 +302,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 			return false;
 		}
 
-		return intval($matches['size']);
+		return (int)$matches['size'];
 	}
 
 	/**
@@ -355,8 +342,8 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @throws InvalidArgumentException
 	 * @throws RuntimeException
 	 */
-	public function download($remoteFilename, $localFilename, $mode=2)
-	{
+	public function download($remoteFilename, $localFilename, $mode=2): bool
+    {
 		$modes = array(
 			self::MODE_ASCII  => 'A',
 			self::MODE_BINARY => 'I',
@@ -396,7 +383,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 
 		$response = $this->_request(sprintf('RETR %s', $remoteFilename));
 
-		if ( $response['code'] !== 150 and $response['code'] !== 125 )
+		if ( $response['code'] !== 150 && $response['code'] !== 125 )
 		{
 			return false;
 		}
@@ -446,7 +433,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 
 		$response = $this->_request(sprintf('RETR %s', $remoteFilename));
 
-		if ( $response['code'] !== 150 and $response['code'] !== 125 )
+		if ( $response['code'] !== 150 && $response['code'] !== 125 )
 		{
 			return false;
 		}
@@ -469,8 +456,8 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @throws InvalidArgumentException
 	 * @throws RuntimeException
 	 */
-	public function upload($localFilename, $remoteFilename, $mode=2)
-	{
+	public function upload($localFilename, $remoteFilename, $mode=2): bool
+    {
 		$modes = array(
 			self::MODE_ASCII  => 'A',
 			self::MODE_BINARY => 'I',
@@ -510,7 +497,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 
 		$response = $this->_request(sprintf('STOR %s', $remoteFilename));
 
-		if ( $response['code'] !== 150 and $response['code'] !== 125 )
+		if ( $response['code'] !== 150 && $response['code'] !== 125 )
 		{
 			return false;
 		}
@@ -532,8 +519,8 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @throws InvalidArgumentException
 	 * @throws RuntimeException
 	 */
-	public function uploadString($content, $remoteFilename, $mode=2)
-	{
+	public function uploadString($content, $remoteFilename, $mode=2): bool
+    {
 		$modes = array(
 			self::MODE_ASCII  => 'A',
 			self::MODE_BINARY => 'I',
@@ -560,7 +547,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 
 		$response = $this->_request(sprintf('STOR %s', $remoteFilename));
 
-		if ( $response['code'] !== 150 and $response['code'] !== 125 )
+		if ( $response['code'] !== 150 && $response['code'] !== 125 )
 		{
 			return false;
 		}
@@ -582,9 +569,9 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 
 	/**
 	 * Set an observer.
-	 * @param Suin_FTPClient_ObserverInterface $observer
+	 * @param ObserverInterface $observer
 	 */
-	public function setObserver(Suin_FTPClient_ObserverInterface $observer)
+	public function setObserver(ObserverInterface $observer): void
 	{
 		$this->observer = $observer;
 	}
@@ -634,8 +621,8 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 			return false;
 		}
 
-		$host = strtr($matches['host'], ',', '.');
-		$port = ( $matches['port1'] * 256 ) + $matches['port2']; // low bit * 256 + high bit
+		$host = str_replace(',', '.', $matches['host']);
+		$port = ($matches['port1'] * 256 ) + $matches['port2']; // low bit * 256 + high bit
 
 		return array(
 			'host' => $host,
@@ -648,16 +635,15 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @param string $request
 	 * @return array
 	 */
-	protected function _request($request)
-	{
-		$request = $request."\r\n";
+	protected function _request($request): array
+    {
+		$request .= "\r\n";
 
-		if ( is_object($this->observer) === true )
-		{
+		if ( is_object($this->observer) === true ) {
 			$this->observer->updateWithRequest($request);
 		}
 
-		fputs($this->connection, $request);
+		fwrite($this->connection, $request);
 		return $this->_getResponse();
 	}
 
@@ -665,8 +651,8 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * Fetch the response.
 	 * @return array
 	 */
-	protected function _getResponse()
-	{
+	protected function _getResponse(): array
+    {
 		$response = array(
 			'code'    => 0,
 			'message' => '',
@@ -683,7 +669,7 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 			}
 		}
 
-		$response['code'] = intval(substr(ltrim($response['message']), 0, 3));
+		$response['code'] = (int)substr(ltrim($response['message']), 0, 3);
 
 		if ( is_object($this->observer) === true )
 		{
@@ -751,8 +737,8 @@ class Suin_FTPClient_FTPClient implements Suin_FTPClient_FTPClientInterface,
 	 * @param string $command
 	 * @return bool
 	 */
-	protected function _supports($command)
-	{
+	protected function _supports($command): bool
+    {
 		$features = $this->getFeatures();
 		return array_key_exists($command, $features);
 	}

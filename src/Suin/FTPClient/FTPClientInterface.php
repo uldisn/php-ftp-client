@@ -1,6 +1,10 @@
 <?php
 
-interface Suin_FTPClient_FTPClientInterface
+namespace Suin\FTPClient;
+
+use RuntimeException;
+
+interface FTPClientInterface
 {
 	const MODE_ASCII  = 1;
 	const MODE_BINARY = 2;
@@ -13,7 +17,7 @@ interface Suin_FTPClient_FTPClientInterface
 	 * @param string $host
 	 * @param int $port
 	 * @param int $transferMode
-	 * @throws \RuntimeException If failed to connect to the server.
+	 * @throws RuntimeException If failed to connect to the server.
 	 */
 	public function __construct($host, $port = 21, $transferMode = self::TRANSFER_MODE_PASSIVE);
 
@@ -23,7 +27,7 @@ interface Suin_FTPClient_FTPClientInterface
 	 * @param string $password
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function login($username, $password);
+	public function login($username, $password): bool;
 
 	/**
 	 * Return the system name.
@@ -44,7 +48,7 @@ interface Suin_FTPClient_FTPClientInterface
 	 * @abstract
 	 * @return void
 	 */
-	public function disconnect();
+	public function disconnect(): void;
 
 	/**
 	 * Return the current directory name.
@@ -54,12 +58,12 @@ interface Suin_FTPClient_FTPClientInterface
 	public function getCurrentDirectory();
 
 	/**
-	 * Change the current directory on a FTP server.
+	 * Change the current directory on an FTP server.
 	 * @abstract
 	 * @param string $directory
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function changeDirectory($directory);
+	public function changeDirectory($directory): bool;
 
 	/**
 	 * Remove a directory.
@@ -67,7 +71,7 @@ interface Suin_FTPClient_FTPClientInterface
 	 * @param string $directory
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function removeDirectory($directory);
+	public function removeDirectory($directory): bool;
 
 	/**
 	 * Create a directory.
@@ -75,7 +79,7 @@ interface Suin_FTPClient_FTPClientInterface
 	 * @param string $directory
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function createDirectory($directory);
+	public function createDirectory($directory): bool;
 
 	/**
 	 * Rename a file or a directory on the FTP server.
@@ -84,7 +88,7 @@ interface Suin_FTPClient_FTPClientInterface
 	 * @param string $newName
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function rename($oldName, $newName);
+	public function rename($oldName, $newName): bool;
 
 	/**
 	 * Delete a file on the FTP server.
@@ -92,7 +96,7 @@ interface Suin_FTPClient_FTPClientInterface
 	 * @param string $filename
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function removeFile($filename);
+	public function removeFile($filename): bool;
 
 	/**
 	 * Set permissions on a file via FTP.
@@ -101,7 +105,7 @@ interface Suin_FTPClient_FTPClientInterface
 	 * @param int $mode The new permissions, given as an octal value.
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function setPermission($filename, $mode);
+	public function setPermission($filename, $mode): bool;
 
 	/**
 	 * Return a list of files in the given directory.
@@ -137,7 +141,7 @@ interface Suin_FTPClient_FTPClientInterface
 	 * @param int $mode MODE_ASCII or MODE_BINARY
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function download($remoteFilename, $localFilename, $mode);
+	public function download($remoteFilename, $localFilename, $mode): bool;
 
 	/**
 	 * Upload a file to the FTP server.
@@ -147,5 +151,5 @@ interface Suin_FTPClient_FTPClientInterface
 	 * @param int $mode MODE_ASCII or MODE_BINARY
 	 * @return bool If success return TRUE, fail return FALSE.
 	 */
-	public function upload($localFilename, $remoteFilename, $mode);
+	public function upload($localFilename, $remoteFilename, $mode): bool;
 }
